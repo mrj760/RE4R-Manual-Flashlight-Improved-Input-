@@ -6,7 +6,7 @@ local keyboard_key_name = "X"
 local gamepad_key_name_1  = "LTrigBottom"
 local gamepad_key_name_2 = "Decide"
 
-local GP_GRACE_FRAMES = 3
+local GP_GRACE_TIME = 0.08
 local gp_release_timer_1 = -1
 local gp_release_timer_2 = -1
 
@@ -55,44 +55,51 @@ sdk.hook(
     function(x) return x end
 )
 
+local last_time = os.clock()
+local gp_release_time_1 = 0
+local gp_release_time_2 = 0
+
 re.on_frame(function()
+    local dt = os.clock() - last_time
+	last_time = os.clock()
+
     local kb_release = kb:call("isRelease", kb_button_data)
 
     local gp_release_1 = gp:call("isRelease", gp_button_data_1)
     local gp_release_2 = gp:call("isRelease", gp_button_data_2)
+	
+	-- Start timers when either stick is released
+	if gp_release_1 then
+		gp_release_time_1 = GP_GRACE_TIME
+	end
 
-    -- Start timers when either stick is released
-    if gp_release_1 then
-        gp_release_timer_1 = GP_GRACE_FRAMES
-    end
+	if gp_release_2 then
+		gp_release_time_2 = GP_GRACE_TIME
+	end
 
-    if gp_release_2 then
-        gp_release_timer_2 = GP_GRACE_FRAMES
-    end
+	-- Count timers down using real time
+	if gp_release_time_1 >= 0 then
+		gp_release_time_1 = gp_release_time_1 - dt
+	end
 
-    -- Count timers down
-    if gp_release_timer_1 >= 0 then
-        gp_release_timer_1 = gp_release_timer_1 - 1
-    end
+	if gp_release_time_2 >= 0 then
+		gp_release_time_2 = gp_release_time_2 - dt
+	end
 
-    if gp_release_timer_2 >= 0 then
-        gp_release_timer_2 = gp_release_timer_2 - 1
-    end
+	-- Both releases happened close enough together
+	local gb_release =
+		gp_release_time_1 >= 0 and
+		gp_release_time_2 >= 0
 
-    -- Both sticks released close enough together
-    local gp_combo =
-        gp_release_timer_1 >= 0 and
-        gp_release_timer_2 >= 0
-
-    if kb_release or gp_combo then
+    if kb_release or gb_release then
         local id = get_player_id()
         if id == -1 then
             return
         end
 
-        -- Reset timers so it only fires once
-        gp_release_timer_1 = -1
-        gp_release_timer_2 = -1
+        -- Reset so it only fires once
+        gp_release_time_1 = -1
+        gp_release_time_2 = -1
 
         allow_change = true
         light_state = not light_state
