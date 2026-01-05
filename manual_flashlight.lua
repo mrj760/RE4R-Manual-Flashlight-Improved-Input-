@@ -6,7 +6,7 @@ local keyboard_key_name = "X"
 local gamepad_key_name_1  = "LTrigBottom"
 local gamepad_key_name_2 = "Decide"
 
-local GP_GRACE_TIME = 0.08
+local GP_GRACE_TIME = 0.3
 local gp_release_timer_1 = -1
 local gp_release_timer_2 = -1
 
